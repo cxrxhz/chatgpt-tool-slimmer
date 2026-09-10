@@ -1,0 +1,100 @@
+<!doctype html>
+<meta charset="utf-8">
+<body>
+<div id="root"></div>
+<pre id="result">pending</pre>
+<script src="../dom-core.js"></script>
+<script>
+  const root = document.getElementById('root');
+
+  function turn(role, n, cardCount = 0) {
+    const section = document.createElement('section');
+    section.dataset.turn = role;
+    section.dataset.testid = `conversation-turn-${n}`;
+    section.dataset.turnId = `${role}-turn-${n}`;
+    if (role === 'user') {
+      const msg = document.createElement('div');
+      msg.dataset.messageId = `user-msg-${n}`;
+      msg.textContent = `user ${n}`;
+      section.appendChild(msg);
+    } else {
+      // ChatGPT reuses the cot-v5 icon pile inside the agent/task progress
+      // timeline. This row must NEVER be treated as a hideable tool card.
+      const progress = document.createElement('div');
+      progress.className = 'progress-row';
+      const progressPile = document.createElement('span');
+      progressPile.dataset.testid = 'cot-v5-tool-icon-pile';
+      const progressText = document.createElement('span');
+      progressText.textContent = `验证测试环境并运行本地浏览器评估 ${n}`;
+      progress.append(progressPile, progressText);
+      section.appendChild(progress);
+
+      for (let i = 0; i < cardCount; i += 1) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'contents card-wrapper';
+
+        const summary = document.createElement('span');
+        summary.className = 'group/tool-message';
+        summary.textContent = '已调用工具';
+
+        const header = document.createElement('div');
+        const csp = document.createElement('button');
+        csp.setAttribute('aria-label', 'CSP 已关闭。打开连接器高级设置');
+        csp.textContent = '工作dev';
+        header.appendChild(csp);
+
+        const frameBox = document.createElement('div');
+        const frame = document.createElement('iframe');
+        frame.title = 'ui://devspace/workspace-app.html';
+        frameBox.appendChild(frame);
+
+        wrapper.append(summary, header, frameBox);
+        section.appendChild(wrapper);
+      }
+      const answer = document.createElement('div');
+      answer.dataset.messageId = `assistant-msg-${n}`;
+      answer.textContent = `answer ${n}`;
+      section.appendChild(answer);
+    }
+    root.appendChild(section);
+  }
+
+  turn('user', 1); turn('assistant', 2, 5);
+  turn('user', 3); turn('assistant', 4, 5);
+  turn('user', 5); turn('assistant', 6, 5);
+
+  const result = ChatGPTToolSlimDom.apply(document, {
+    enabled: true, realtimeEnabled: true, mode: 'safe', protectRecentTurns: 2, maxVisibleToolCards: 4
+  });
+  const sectionsHidden = [...document.querySelectorAll('section[data-turn]')]
+    .filter((el) => el.hasAttribute('data-cgpt-tool-slim-hidden')).length;
+  const wrappersHidden = [...document.querySelectorAll('.card-wrapper')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') === '1').length;
+  const visibleWrappers = [...document.querySelectorAll('.card-wrapper')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') !== '1').length;
+  const progressHidden = [...document.querySelectorAll('.progress-row')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') === '1').length;
+  const realtimeOff = ChatGPTToolSlimDom.apply(document, {
+    enabled: true, realtimeEnabled: false, mode: 'safe', protectRecentTurns: 2, maxVisibleToolCards: 4
+  });
+  const hiddenAfterRealtimeOff = [...document.querySelectorAll('.card-wrapper')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') === '1').length;
+  const output = {
+    cardsSeen: result.cardsSeen,
+    cardsHidden: result.cardsHidden,
+    cardsKept: result.cardsKept,
+    overflowByCount: result.overflowByCount,
+    sectionsHidden,
+    wrappersHidden,
+    visibleWrappers,
+    progressHidden,
+    restoredWhenRealtimeOff: realtimeOff.restored,
+    hiddenAfterRealtimeOff,
+    pass: result.cardsSeen === 15 && result.cardsHidden === 11 && result.cardsKept === 4
+      && sectionsHidden === 0 && wrappersHidden === 11 && visibleWrappers === 4
+      && progressHidden === 0
+      && realtimeOff.restored === 11 && hiddenAfterRealtimeOff === 0
+  };
+  document.getElementById('result').textContent = JSON.stringify(output);
+</script>
+</body>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Tool Slimmer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="brand-copy">
+        <div class="title-row">
+          <h1>Tool Slimmer</h1>
+          <span class="version">1.0</span>
+        </div>
+        <p>精简历史工具卡，不接管 ChatGPT 原生分页。</p>
+      </div>
+      <label class="switch master-switch" title="启用或关闭插件">
+        <input id="enabled" type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <div class="status-line">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText">已启用</span>
+      <span id="saveState" class="save-state">设置自动保存</span>
+    </div>
+
+    <section id="settingsArea" class="settings-area">
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>工具卡策略</h2>
+            <p>轮次和数量同时限制，始终取更严格的一项。</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="field-label">处理模式</span>
+          <select id="mode">
+            <option value="safe">兼容模式 · 仅隐藏</option>
+            <option value="compact">精简模式 · 隐藏并缩减历史 payload</option>
+          </select>
+        </label>
+
+        <div class="number-grid">
+          <label class="number-card">
+            <span>保留最近轮次</span>
+            <input id="protectRecentTurns" type="number" min="0" max="10" step="1">
+            <small>用户轮次</small>
+          </label>
+          <label class="number-card">
+            <span>最多保留工具卡</span>
+            <input id="maxVisibleToolCards" type="number" min="1" max="200" step="1">
+            <small>默认 20 张</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel compact-panel">
+        <label class="toggle-row">
+          <div>
+            <strong>实时处理</strong>
+            <p>对新生成或重新挂载的工具卡即时应用限制。</p>
+          </div>
+          <span class="switch">
+            <input id="realtimeEnabled" type="checkbox">
+            <span class="slider"></span>
+          </span>
+        </label>
+        <div class="divider"></div>
+        <label class="toggle-row">
+          <div>
+            <strong>隐藏旧 reasoning</strong>
+            <p>同时隐藏超出范围的旧 thoughts / reasoning UI。</p>
+          </div>
+          <span class="switch">
+            <input id="hideOldReasoning" type="checkbox">
+            <span class="slider"></span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <div class="footer-note" id="modeHint">
+      实时处理关闭后，只在刷新页面或 ChatGPT 实际加载历史数据时处理工具卡。
+    </div>
+
+    <button id="reload" class="reload-button" type="button">刷新当前 ChatGPT 页面</button>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

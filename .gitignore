@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+.idea/
+.vscode/
+node_modules/
+tests/.edge-test-profile/
+tests/.edge-profile/
+tests/.browser-profile/
+

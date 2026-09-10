@@ -1,0 +1,79 @@
+name: Bug report / Bug 反馈
+description: Report a compatibility or behavior issue / 报告兼容性或行为问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do **not** upload full private ChatGPT conversation responses.
+
+        请**不要上传完整的私人 ChatGPT conversation response**。
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version / 浏览器与版本
+      placeholder: "Edge 152 / Chrome 152"
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Tool Slimmer version / 插件版本
+      placeholder: "v1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Processing mode / 处理模式
+      options:
+        - Safe
+        - Compact
+    validations:
+      required: true
+
+  - type: dropdown
+    id: realtime
+    attributes:
+      label: Real-time processing / 实时处理
+      options:
+        - Enabled / 开启
+        - Disabled / 关闭
+    validations:
+      required: true
+
+  - type: input
+    id: limits
+    attributes:
+      label: Limits / 限制设置
+      description: Recent turns and maximum tool cards / 最近轮次与最多工具卡
+      placeholder: "2 turns, 20 cards / 2 轮，20 张"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened? / 出现了什么问题？
+      description: Describe what was hidden, not hidden, or otherwise incorrect / 描述哪些内容被误隐藏、没有隐藏或行为异常
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior / 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot / 截图
+      description: Redact private conversation content when possible / 请尽量遮盖私人对话内容
+
