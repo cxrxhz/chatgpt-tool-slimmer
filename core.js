@@ -223,6 +223,13 @@
     return { groups, messageToGroup };
   }
 
+  function isBudgetedToolGroup(group, messages) {
+    return group.indexes.some((index) => {
+      const message = messages[index];
+      return isToolUiMessage(message) && !isToolInvocationMessage(message);
+    });
+  }
+
   function jsonByteLength(value) {
     try {
       const text = JSON.stringify(value);
@@ -328,9 +335,10 @@
 
     const protection = computeProtection(messages, settings.protectRecentTurns, historicalPage);
     const toolGroups = buildToolCardGroups(messages);
-    stats.toolCardsSeen = toolGroups.groups.length;
+    const budgetToolGroups = toolGroups.groups.filter((group) => isBudgetedToolGroup(group, messages));
+    stats.toolCardsSeen = budgetToolGroups.length;
 
-    const groupsProtectedByTurn = toolGroups.groups.filter((group) =>
+    const groupsProtectedByTurn = budgetToolGroups.filter((group) =>
       group.indexes.some((index) => isProtected(messages[index], index, protection))
     );
     const keptToolGroups = new Set(
@@ -339,7 +347,7 @@
         .map((group) => group.key)
     );
     stats.toolCardsKept = keptToolGroups.size;
-    stats.toolCardsTrimmed = Math.max(0, toolGroups.groups.length - keptToolGroups.size);
+    stats.toolCardsTrimmed = Math.max(0, budgetToolGroups.length - keptToolGroups.size);
 
     const outMessages = messages.slice();
     let changed = false;
@@ -401,6 +409,7 @@
     isToolUiMessage,
     isReasoningUiMessage,
     buildToolCardGroups,
+    isBudgetedToolGroup,
     transformConversationPayload
   });
 })();

@@ -1,5 +1,17 @@
 # Changelog / 更新日志
 
+## v1.0.1 - 2026-09-11
+
+### English
+
+- Fix tool-card budget counting so task / agent progress-only invocation rows do not consume the visible-card limit.
+- Keep the existing invocation + result grouping, so a real heavy tool result still counts as one logical card.
+
+### 中文
+
+- 修复工具卡额度计数：仅用于展示任务 / agent 进度、没有重工具结果的调用行不再占用“最多保留工具卡数量”。
+- 保留原有“调用 + 工具结果”分组，因此真正的重工具结果仍按 1 张逻辑工具卡计数。
+
 ## v1.0.0 - 2026-09-10
 
 ### English

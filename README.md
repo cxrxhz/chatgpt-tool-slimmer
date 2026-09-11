@@ -71,7 +71,7 @@ visible tool card
 
 Defaults: recent user turns `2`, maximum visible logical tool cards `20`.
 
-One logical tool invocation plus its following result records is counted as one logical tool card where possible, instead of counting every protocol message separately.
+One logical tool invocation plus its following result records is counted as one logical tool card where possible, instead of counting every protocol message separately. A progress-only invocation row with no hideable tool result does **not** consume the card budget.
 
 ## Modes
 
@@ -79,7 +79,7 @@ One logical tool invocation plus its following result records is counted as one 
 
 Compatibility-first mode. Old tool **result / UI** messages are marked hidden using ChatGPT-compatible visibility metadata while their original payload is otherwise kept.
 
-Assistant-to-tool invocation messages continue to participate in logical tool-card counting but are kept visible so task-progress descriptions are not lost.
+Assistant-to-tool invocation messages are kept visible so task-progress descriptions are not lost. They only consume the logical tool-card budget when the same group contains an actual hideable tool result / connector / App UI.
 
 ### Compact
 

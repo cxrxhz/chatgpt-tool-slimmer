@@ -195,6 +195,35 @@ const payload = {
 }
 
 {
+  const progressDoesNotConsumeBudget = {
+    messages: [
+      user('u-progress', 't-progress'),
+      call('c-heavy', 't-progress'),
+      tool('r-heavy', 't-progress'),
+      call('progress-1', 't-progress', 'api_tool.read_resource'),
+      call('progress-2', 't-progress', 'python'),
+      answer('a-progress', 't-progress')
+    ],
+    page_info: pageInfo,
+    current_node: 'a-progress'
+  };
+  const groups = core.buildToolCardGroups(progressDoesNotConsumeBudget.messages);
+  assert.equal(groups.groups.length, 3, 'progress invocations remain separate logical groups for pairing/state');
+  assert.equal(core.isBudgetedToolGroup(groups.groups[0], progressDoesNotConsumeBudget.messages), true);
+  assert.equal(core.isBudgetedToolGroup(groups.groups[1], progressDoesNotConsumeBudget.messages), false);
+  assert.equal(core.isBudgetedToolGroup(groups.groups[2], progressDoesNotConsumeBudget.messages), false);
+
+  const result = core.transformConversationPayload(progressDoesNotConsumeBudget, initialUrl, {
+    mode: 'safe', protectRecentTurns: 1, maxVisibleToolCards: 1, hideOldReasoning: false
+  });
+  assert.equal(result.stats.toolCardsSeen, 1, 'progress-only invocation rows must not consume the visible tool-card budget');
+  assert.equal(result.stats.toolCardsKept, 1);
+  assert.equal(result.stats.toolCardsTrimmed, 0);
+  assert.equal(result.payload.messages[3].metadata.is_visually_hidden_from_conversation, undefined, 'progress row stays visible');
+  assert.equal(result.payload.messages[4].metadata.is_visually_hidden_from_conversation, undefined, 'progress row stays visible');
+}
+
+{
   const fragment = {
     messages: [call('c-only', 't-x'), tool('r-only', 't-x')],
     page_info: { has_previous_page: false }
