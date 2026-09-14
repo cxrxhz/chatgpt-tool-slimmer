@@ -46,6 +46,7 @@
         const frameBox = document.createElement('div');
         const frame = document.createElement('iframe');
         frame.title = 'ui://devspace/workspace-app.html';
+        frame.setAttribute('src', `about:blank#tool-${n}-${i}`);
         frameBox.appendChild(frame);
 
         wrapper.append(summary, header, frameBox);
@@ -74,11 +75,18 @@
     .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') !== '1').length;
   const progressHidden = [...document.querySelectorAll('.progress-row')]
     .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') === '1').length;
+  const unloadedFrames = [...document.querySelectorAll('.card-wrapper iframe')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-unloaded') === '1'
+      && el.getAttribute('src') === 'about:blank').length;
   const realtimeOff = ChatGPTToolSlimDom.apply(document, {
     enabled: true, realtimeEnabled: false, mode: 'safe', protectRecentTurns: 2, maxVisibleToolCards: 4
   });
   const hiddenAfterRealtimeOff = [...document.querySelectorAll('.card-wrapper')]
     .filter((el) => el.getAttribute('data-cgpt-tool-slim-hidden') === '1').length;
+  const unloadedAfterRealtimeOff = [...document.querySelectorAll('.card-wrapper iframe')]
+    .filter((el) => el.getAttribute('data-cgpt-tool-slim-unloaded') === '1').length;
+  const restoredFrameSources = [...document.querySelectorAll('.card-wrapper iframe')]
+    .filter((el) => /^about:blank#tool-/.test(el.getAttribute('src') || '')).length;
   const output = {
     cardsSeen: result.cardsSeen,
     cardsHidden: result.cardsHidden,
@@ -88,12 +96,17 @@
     wrappersHidden,
     visibleWrappers,
     progressHidden,
+    unloadedFrames,
     restoredWhenRealtimeOff: realtimeOff.restored,
     hiddenAfterRealtimeOff,
+    unloadedAfterRealtimeOff,
+    restoredFrameSources,
     pass: result.cardsSeen === 15 && result.cardsHidden === 11 && result.cardsKept === 4
       && sectionsHidden === 0 && wrappersHidden === 11 && visibleWrappers === 4
       && progressHidden === 0
+      && unloadedFrames === 11
       && realtimeOff.restored === 11 && hiddenAfterRealtimeOff === 0
+      && unloadedAfterRealtimeOff === 0 && restoredFrameSources === 15
   };
   document.getElementById('result').textContent = JSON.stringify(output);
 </script>

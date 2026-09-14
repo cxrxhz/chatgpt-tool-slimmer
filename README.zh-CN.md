@@ -100,6 +100,8 @@ message ID、author、recipient、状态及必要链路字段仍然保留。首�
 - **开启：** 处理当前对话中新生成的工具卡，以及 ChatGPT 预取后才重新 mount 的历史工具卡。
 - **关闭：** 不创建 MutationObserver，也不进行实时扫描；只在刷新页面或 ChatGPT 实际请求 conversation / history 数据时处理。
 
+从 v1.0.2 开始，实时 DOM 处理使用尾随防抖合并连续变化，不再在长工具流期间约每秒反复进行整页扫描。被隐藏的 connector / App sandbox iframe 也会导航到 `about:blank`，以便释放远程浏览上下文；如果该卡片之后重新进入可见范围，会恢复原始 URL。
+
 ### 隐藏旧 reasoning
 
 可选。开启后，超出最近轮次保护范围的 `thoughts` / `reasoning_recap` UI 也会隐藏。
@@ -118,7 +120,7 @@ message ID、author、recipient、状态及必要链路字段仍然保留。首�
 
 克隆仓库后，直接把仓库根目录作为“加载解压缩的扩展”目录即可，不需要构建。
 
-## v1.0.0 已验证行为
+## v1.0.2 已验证行为
 
 - ChatGPT 原生向上加载历史仍可正常使用。
 - 历史工具卡同时受最近轮次和卡片数量限制。
@@ -126,6 +128,8 @@ message ID、author、recipient、状态及必要链路字段仍然保留。首�
 - 开始下一轮后，上一轮会重新按当前限制处理。
 - 对 ChatGPT 已预取、滚动时仅重新 mount 的旧历史工具卡，开启实时模式后仍可补充处理。
 - connector / App iframe 只隐藏单张工具 UI 容器，不向上误伤整轮 assistant。
+- 超出可见额度的 connector / App iframe 会释放其浏览上下文；若之后重新进入可见范围，可以恢复原始 iframe URL。
+- 实时 mutation 处理会合并连续变化，减少长时间工具执行期间的重复整页扫描。
 - 任务 / agent 执行进度时间线保持可见。
 
 ## 隐私

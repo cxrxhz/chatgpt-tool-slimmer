@@ -4,6 +4,8 @@
   if (globalThis.ChatGPTToolSlimDom) return;
 
   const HIDDEN_ATTR = 'data-cgpt-tool-slim-hidden';
+  const UNLOADED_ATTR = 'data-cgpt-tool-slim-unloaded';
+  const ORIGINAL_SRC_ATTR = 'data-cgpt-tool-slim-original-src';
   const STYLE_ID = 'cgpt-tool-slim-dom-style';
   const TURN_SELECTOR = 'section[data-turn][data-testid^="conversation-turn"]';
   const TOOL_IFRAME_SELECTOR = 'iframe[title^="ui://"], iframe[src*=".web-sandbox.oaiusercontent.com"]';
@@ -31,6 +33,7 @@
     if (doc.getElementById(STYLE_ID)) return;
     const style = doc.createElement('style');
     style.id = STYLE_ID;
+    style.setAttribute('data-cgpt-tool-slim-dom-version', '1.0.2');
     style.textContent = `[${HIDDEN_ATTR}="1"]{display:none!important}`;
     (doc.head || doc.documentElement).appendChild(style);
   }
@@ -121,9 +124,53 @@
     return { sections, cards, rejected };
   }
 
+  function iframeCandidates(target) {
+    const frames = [];
+    if (target instanceof HTMLIFrameElement) frames.push(target);
+    for (const frame of target.querySelectorAll?.(TOOL_IFRAME_SELECTOR) || []) frames.push(frame);
+    return frames;
+  }
+
+  function unloadToolFrames(target) {
+    let unloaded = 0;
+    for (const frame of iframeCandidates(target)) {
+      if (frame.getAttribute(UNLOADED_ATTR) === '1') continue;
+
+      // srcdoc can contain the whole app document. Keeping a second copy merely
+      // to make realtime mode reversible defeats the memory-saving purpose, so
+      // leave srcdoc-backed frames alone. ChatGPT connector/app sandboxes use a
+      // normal src URL in the live UI we target here.
+      if (frame.hasAttribute('srcdoc')) continue;
+      const src = frame.getAttribute('src');
+      if (!src || src === 'about:blank') continue;
+
+      frame.setAttribute(ORIGINAL_SRC_ATTR, src);
+      frame.setAttribute(UNLOADED_ATTR, '1');
+      // Navigating the frame to about:blank destroys its remote browsing
+      // context while keeping the React-owned iframe element in place.
+      frame.setAttribute('src', 'about:blank');
+      unloaded += 1;
+    }
+    return unloaded;
+  }
+
+  function restoreToolFrames(target) {
+    let restored = 0;
+    for (const frame of iframeCandidates(target)) {
+      if (frame.getAttribute(UNLOADED_ATTR) !== '1') continue;
+      const src = frame.getAttribute(ORIGINAL_SRC_ATTR);
+      if (src) frame.setAttribute('src', src);
+      frame.removeAttribute(ORIGINAL_SRC_ATTR);
+      frame.removeAttribute(UNLOADED_ATTR);
+      restored += 1;
+    }
+    return restored;
+  }
+
   function restoreAll(root = document) {
     let restored = 0;
     for (const element of root.querySelectorAll(`[${HIDDEN_ATTR}="1"]`)) {
+      restoreToolFrames(element);
       element.removeAttribute(HIDDEN_ATTR);
       restored += 1;
     }
@@ -253,7 +300,12 @@
 
     let hiddenNow = 0;
     let restored = 0;
+    let framesUnloaded = 0;
+    let framesRestored = 0;
     for (const target of result.hide) {
+      // Run even for targets already hidden: React may have recreated an iframe
+      // inside a hidden wrapper since the previous sweep.
+      framesUnloaded += unloadToolFrames(target);
       if (target.getAttribute(HIDDEN_ATTR) !== '1') {
         target.setAttribute(HIDDEN_ATTR, '1');
         hiddenNow += 1;
@@ -261,6 +313,7 @@
     }
     for (const target of result.keep) {
       if (target.getAttribute(HIDDEN_ATTR) === '1') {
+        framesRestored += restoreToolFrames(target);
         target.removeAttribute(HIDDEN_ATTR);
         restored += 1;
       }
@@ -270,6 +323,8 @@
       mode: settings.mode,
       restored,
       hiddenNow,
+      framesUnloaded,
+      framesRestored,
       cardsSeen: result.cards.length,
       cardsHidden: result.hide.size,
       cardsKept: result.keep.size,
@@ -283,6 +338,8 @@
 
   globalThis.ChatGPTToolSlimDom = Object.freeze({
     HIDDEN_ATTR,
+    UNLOADED_ATTR,
+    ORIGINAL_SRC_ATTR,
     TURN_SELECTOR,
     TOOL_IFRAME_SELECTOR,
     TOOL_SUMMARY_SELECTOR,
@@ -291,6 +348,8 @@
     resolveSandboxToolCardTarget,
     resolveToolCardTarget,
     collectCards,
+    unloadToolFrames,
+    restoreToolFrames,
     restoreAll,
     plan,
     apply

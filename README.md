@@ -100,6 +100,8 @@ Enabled by default.
 - **On:** handles newly generated tool cards and already-prefetched history that ChatGPT later remounts.
 - **Off:** no MutationObserver is used. Processing only happens when the page is refreshed or ChatGPT actually requests conversation / history data.
 
+In v1.0.2, real-time DOM work is coalesced with a trailing debounce instead of repeatedly sweeping the whole conversation roughly once per second during long tool streams. Hidden connector / App sandbox iframes are also navigated to `about:blank` so their remote browsing contexts can be released; their original URL is restored if the card becomes visible again.
+
 ### Hide old reasoning
 
 Optional. When enabled, old `thoughts` / `reasoning_recap` UI outside the protected recent-turn range is hidden as well.
@@ -118,7 +120,7 @@ Optional. When enabled, old `thoughts` / `reasoning_recap` UI outside the protec
 
 Clone the repository and load the repository root as an unpacked extension. There is no build step.
 
-## Verified behavior in v1.0.0
+## Verified behavior in v1.0.2
 
 - Native upward history loading remains available.
 - Old tool cards are limited by recent-turn scope and card count.
@@ -126,6 +128,8 @@ Clone the repository and load the repository root as an unpacked extension. Ther
 - Starting a new user turn causes the previous turn to be reevaluated against the configured limits.
 - Prefetched history that is only remounted in the DOM can still be handled when real-time mode is enabled.
 - Connector / App iframe hiding is bounded to the individual tool UI container rather than an entire assistant turn.
+- Hidden connector / App iframe browsing contexts are unloaded while their card is outside the visible budget and restored if the card becomes visible again.
+- Real-time mutation handling is debounced to reduce repeated full-document scans during long-running tool streams.
 - Task / agent progress timelines remain visible.
 
 ## Privacy

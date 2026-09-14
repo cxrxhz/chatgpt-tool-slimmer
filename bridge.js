@@ -19,8 +19,14 @@
   let domObserver = null;
   let domSweepPending = false;
   let domSweepTimer = null;
-  let lastDomSweepAt = 0;
-  const DOM_SWEEP_MIN_INTERVAL_MS = 800;
+  let domSweepFirstRequestedAt = 0;
+  // A tool-heavy response can append relevant nodes continuously for minutes.
+  // The old 800 ms throttle still performed a full-document sweep about once
+  // per second during that entire stream. Use trailing debounce instead, with
+  // a hard upper bound so old tool cards are still hidden while a long turn is
+  // running.
+  const DOM_SWEEP_DEBOUNCE_MS = 1500;
+  const DOM_SWEEP_MAX_WAIT_MS = 5000;
   let trackedConversation = '';
   let recentUserIds = [];
   let assistantIdsByUser = new Map();
@@ -114,8 +120,8 @@
   function runDomSweep() {
     domSweepPending = false;
     domSweepTimer = null;
+    domSweepFirstRequestedAt = 0;
     if (!dom || !currentSettings.enabled || !currentSettings.realtimeEnabled) return;
-    lastDomSweepAt = Date.now();
     refreshRecentUsersFromDom();
     const protectedUsers = currentSettings.protectRecentTurns > 0
       ? recentUserIds.slice(-currentSettings.protectRecentTurns)
@@ -124,19 +130,22 @@
     dom.apply(document, currentSettings, { recentUserIds, recentAssistantIds });
   }
 
-  function scheduleDomSweep() {
-    if (!dom || domSweepPending || !currentSettings.enabled || !currentSettings.realtimeEnabled) return;
-    domSweepPending = true;
-    const earliest = lastDomSweepAt + DOM_SWEEP_MIN_INTERVAL_MS;
-    const delay = Math.max(0, earliest - Date.now());
-    domSweepTimer = setTimeout(() => {
-      const invoke = () => runDomSweep();
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(invoke, { timeout: 500 });
-      } else {
-        invoke();
-      }
-    }, delay);
+  function scheduleDomSweep({ immediate = false } = {}) {
+    if (!dom || !currentSettings.enabled || !currentSettings.realtimeEnabled) return;
+
+    const now = Date.now();
+    if (!domSweepPending) {
+      domSweepPending = true;
+      domSweepFirstRequestedAt = now;
+    }
+
+    if (domSweepTimer !== null) clearTimeout(domSweepTimer);
+
+    const elapsed = Math.max(0, now - domSweepFirstRequestedAt);
+    const delay = immediate
+      ? 0
+      : Math.min(DOM_SWEEP_DEBOUNCE_MS, Math.max(0, DOM_SWEEP_MAX_WAIT_MS - elapsed));
+    domSweepTimer = setTimeout(runDomSweep, delay);
   }
 
   function nodeTouchesConversation(node) {
@@ -164,10 +173,10 @@
         if (relevant) break;
       }
       if (!relevant) return;
-      scheduleDomSweep('conversation-mutation');
+      scheduleDomSweep();
     });
     domObserver.observe(document.documentElement, { childList: true, subtree: true });
-    scheduleDomSweep('observer-start');
+    scheduleDomSweep({ immediate: true });
   }
 
   function stopDomObserver({ restore = true } = {}) {
@@ -180,6 +189,7 @@
       domSweepTimer = null;
     }
     domSweepPending = false;
+    domSweepFirstRequestedAt = 0;
     if (restore && dom && document.documentElement) dom.restoreAll(document);
   }
 
@@ -190,7 +200,7 @@
     }
     if (document.documentElement) {
       startDomObserver();
-      scheduleDomSweep('settings-updated');
+      scheduleDomSweep({ immediate: true });
     }
   }
 
